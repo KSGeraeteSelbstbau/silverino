@@ -1,20 +1,20 @@
-  /*******************************************
- *
- * Name.......:  silverino
- * Description:  Arduino sketch for measure Q (=I*t) for calculating ppm for coloidal silver water (aqua dest.)
- * Hardware:     INA219 current sense modul https://www.adafruit.com/products/904
- * Author.....:  Peter S.
- * Version....:  0.1.2 
- * Date.......:  28.12.16 (Start 22.12.2016)
- * Status.....:  alpha version 
- * Project....:  https://www.facebook.com/groups/kolloidalessilbergeraetetechnik/permalink/1384594958238544/?match=cHBtIHrDpGhsZXI%3D
- * Contact....:  https://www.facebook.com/peter.schmidt.52831
- * License....:  BSD License (license.txt) wie Adafruit
- * Dependencies: Adafruit_INA219 Lib https://github.com/adafruit/Adafruit_INA219
- ********************************************/
- // PetS 22.12.16 INA219 max. Spannung 26V bei High Side Messung (in der Plusleitung) - geht so nicht für KS-Gen. wegen der hohen Spannung
- // deshalb als Shunt in der Masseleitung
- // PetS 28.12.16 INA219 Stromabfrage innerhalb einer Interruptroutine nicht möglich, weil Proz. keine verschachtelten Interupt kann.
+/*******************************************
+* Name.......:  silverino
+* Description:  Arduino sketch for measure Q (=I*t) for calculating ppm for coloidal silver water (aqua dest.)
+* Hardware:     INA219 current sense modul https://www.adafruit.com/products/904
+* Author.....:  Peter S.
+* Version....:  0.1.2 
+* Date.......:  28.12.16 (Start 22.12.2016)
+* Status.....:  alpha version 
+* Project....:  https://www.facebook.com/groups/kolloidalessilbergeraetetechnik/permalink/1384594958238544/?match=cHBtIHrDpGhsZXI%3D
+* Contact....:  https://www.facebook.com/peter.schmidt.52831
+* License....:  BSD License (license.txt) wie Adafruit
+* Dependencies: Adafruit_INA219 Lib https://github.com/adafruit/Adafruit_INA219
+********************************************/
+// PetS 22.12.16 INA219 max. Spannung 26V bei High Side Messung (in der Plusleitung) - geht so nicht für KS-Gen. wegen der hohen Spannung
+// deshalb als Shunt in der Masseleitung
+// PetS 28.12.16 INA219 Stromabfrage innerhalb einer Interruptroutine nicht möglich, weil Proz. keine verschachtelten Interrupts kann.
+// PetS 02.01.2017 Projekt auf Github 
  
 #include <Wire.h>
 #include <Adafruit_INA219.h>
