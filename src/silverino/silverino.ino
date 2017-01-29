@@ -27,7 +27,9 @@
 #include <LiquidCrystal.h>
 
 // Wenn OLED verwendet, bitte den folgenden #define setzen bzw. auskommentieren, wenn nicht verwendet
-#define OLED 
+#define OLED
+// Wenn Bluetooth verwendet, bitte den folgenden #define setzen bzw. auskommentieren, wenn nicht verwendet
+#define BLUETOOTH 
 
 #ifdef OLED
   //OLED
@@ -37,6 +39,14 @@
   #include <Adafruit_SSD1306.h>
   #define OLED_RESET 4
   Adafruit_SSD1306 oled(OLED_RESET);
+#endif
+
+#ifdef BLUETOOTH
+  #include <SoftwareSerial.h>
+  SoftwareSerial bluetooth(14, 15); // RX, TX  
+// Connect HM10      Arduino Uno
+//     Pin 1/TXD          Pin 14
+//     Pin 2/RXD          Pin 15
 #endif
 
 Adafruit_INA219 ina219;
@@ -139,7 +149,14 @@ ISR(TIMER1_COMPA_vect){
   oled.setCursor(0,21); 
   oled.print(ppm); oled.setCursor(50,21); oled.print("ppm");
   oled.setCursor(80,21); oled.print(eingabe_wasser);oled.setCursor(110,21);oled.print("l"); 
-#endif  
+#endif
+
+#ifdef BLUETOOTH
+  bluetooth.print("P");
+  bluetooth.print(ppm);
+  bluetooth.print("A");
+  bluetooth.print(current_mA);
+#endif
 
   // Polaritätswechsel 
   if (!(sek % (polwechselzeit * 60))) //Polaritätswechsel * 60 = n x 1 Min 
@@ -284,6 +301,12 @@ void setup()
  oled.println("Ver.0.5/1/2017");
  oled.display();
  #endif
+ #ifdef BLUETOOTH
+ bluetooth.begin(9600);
+ bluetooth.print("** Silverino **");
+ bluetooth.print("Ver.0.5/1/2017");
+ #endif
+ 
  delay(3000);
  lcd.clear();
  #ifdef OLED 
