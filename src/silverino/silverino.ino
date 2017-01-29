@@ -26,7 +26,7 @@
 #include <Adafruit_INA219.h>
 #include <LiquidCrystal.h>
 
-// Wenn OLED verwendet, bitte den folgenden #define setzen
+// Wenn OLED verwendet, bitte den folgenden #define setzen bzw. auskommentieren, wenn nicht verwendet
 #define OLED 
 
 #ifdef OLED
@@ -272,7 +272,7 @@ void setup()
  lcd.setCursor(0,0);
  lcd.print("** Silverino **");
  lcd.setCursor(0,1); 
- lcd.print("Ver.0.4/1/2017");
+ lcd.print("Ver.0.5/1/2017");
  #ifdef OLED
  oled.begin(SSD1306_SWITCHCAPVCC, 0x3C);
  oled.display();
@@ -281,7 +281,7 @@ void setup()
  oled.clearDisplay();
  oled.setCursor(0,0);
  oled.println("** Silverino **");
- oled.println("Ver.0.4/1/2017");
+ oled.println("Ver.0.5/1/2017");
  oled.display();
  #endif
  delay(3000);
