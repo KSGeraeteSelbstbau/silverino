@@ -2,9 +2,9 @@
  *
  * Name.......:  silverino
  * Description:  Arduino sketch for counting ppm/Q 
- * Author.....:  Peter S.
- * Version....:  0.4/1/2017 
- * Date.......:  11.01.17 
+ * Author.....:  Peter S. & Joerg H. (OLED)
+ * Version....:  0.5/1/2017 
+ * Date.......:  29.01.17 
  * Status.....:  getestet ok 
  * Project....:  https://github.com/ceotjoe/silverino
  * Contact....:  https://www.facebook.com/peter.schmidt.52831
@@ -20,11 +20,25 @@
 // PetS 09.01.2017 sprintf kann %f nicht korrekt als format. Zeile 2 und teilweise1 komplett neu
 // PetS 11.01.2017 pin13 blinken kommt vom optibootloader und kann über LED_START_FLASHES auf null gesetzt werden (bootloader neu!)
 // PetS 11.01.2017 Test mit lm317 und 5mA, 0,4l und 50ppm. Ergebnis 1h 00Min 25Sek - perfekt!
+// JoeH 29.01.2017 OLED Display Adafruit_SSD1306 kompatibel 128x32 pixel hinzugefügt
 
 #include <Wire.h>
 #include <Adafruit_INA219.h>
 #include <LiquidCrystal.h>
- 
+
+// Wenn OLED verwendet, bitte den folgenden #define setzen
+#define OLED 
+
+#ifdef OLED
+  //OLED
+  #include <SPI.h>
+  #include <Wire.h>
+  #include <Adafruit_GFX.h>
+  #include <Adafruit_SSD1306.h>
+  #define OLED_RESET 4
+  Adafruit_SSD1306 oled(OLED_RESET);
+#endif
+
 Adafruit_INA219 ina219;
 
 // Verwendete Pins der LCD anzeige
@@ -34,6 +48,7 @@ LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
 #define START 11
 #define AUDIO 12
 #define POLW  13
+#define TESTLAST 16
 
 // Tastendefinition des LCD Keypad shield
 #define tasteRECHTS   0
@@ -47,7 +62,10 @@ LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
 #define TIMER_OFF TCCR1B &= ~(1 << CS12);
 #define TIMER_ON TCCR1B |= (1 << CS12) | (0 << CS11) | (0 << CS10);  
 
-char zeile1 [17]; 
+char zeile1 [17];
+#ifdef OLED
+  char zeile1_oled [20]; 
+#endif
 
 int lcd_taste = 0;
 int adc_taste_input = 0;
@@ -56,6 +74,7 @@ int stunde, minute, sekunde;
 unsigned int polwechselzeit = 1;
 boolean polaritaet = LOW;
 
+unsigned int eingabe = 0;
 unsigned int eingabe_ppm = 10;
 unsigned int i;
 float eingabe_wasser = 0.1;
@@ -98,17 +117,31 @@ ISR(TIMER1_COMPA_vect){
   Q_gesamt = Q_gesamt + Q_messung;// Q aufaddiert
   masse = (Q_gesamt/1000) * faktor; // Qgesamt von mC nach C 
   sek2hhmmss(sek);
-    // Ausgabe 1. LCD Zeile
-  lcd.setCursor(0,0); 
+  // Ausgabe 1. LCD Zeile
+  lcd.setCursor(0,0);
   sprintf(zeile1,"%01d:%02d:%02d       mA",stunde,minute,sek);
   lcd.print(zeile1);
   lcd.setCursor(9,0); lcd.print(current_mA);
-    // Ausgabe 2. LCD Zeile
   ppm = masse2ppm(masse,eingabe_wasser);
+  // Ausgabe 2. LCD Zeile  
   lcd.setCursor(0,1);
   lcd.print(ppm); lcd.setCursor(7,1); lcd.print("ppm");
   lcd.setCursor(11,1); lcd.print(eingabe_wasser);lcd.setCursor(15,1);lcd.print("l");
-    // Polaritätswechsel 
+
+#ifdef OLED  
+  oled.clearDisplay();
+  oled.setCursor(0,0);
+  oled.println("*** Silverino ***");
+  oled.setCursor(0,10);
+  sprintf(zeile1_oled,"%01d:%02d:%02d           mA",stunde,minute,sek);
+  oled.print(zeile1_oled);
+  oled.setCursor(80,10); oled.print(current_mA);
+  oled.setCursor(0,21); 
+  oled.print(ppm); oled.setCursor(50,21); oled.print("ppm");
+  oled.setCursor(80,21); oled.print(eingabe_wasser);oled.setCursor(110,21);oled.print("l"); 
+#endif  
+
+  // Polaritätswechsel 
   if (!(sek % (polwechselzeit * 60))) //Polaritätswechsel * 60 = n x 1 Min 
   {     
     digitalWrite(POLW, polaritaet);
@@ -130,11 +163,42 @@ int lese_tasten(){
  return tasteNICHTS;  
 }
 
+#ifdef OLED
+void print_oled(){
+  
+  oled.clearDisplay();
+  oled.setCursor(0,0);
+  oled.print("*** Silverino ***");
+  oled.setCursor(0,10);
+  oled.print("ppm:");
+  oled.setCursor(0,21);
+  oled.print("Wasser:");
+  oled.setCursor(70,10);
+  if (eingabe == 1) {
+    oled.setTextColor(BLACK, WHITE); 
+  }else{
+    oled.setTextColor(WHITE);
+  }
+  oled.print(eingabe_ppm);
+  oled.setCursor(70,21);
+  if (eingabe == 2) {
+    oled.setTextColor(BLACK, WHITE); 
+  }else{
+    oled.setTextColor(WHITE);
+  }
+  oled.print(eingabe_wasser);
+  oled.setTextColor(WHITE);
+  oled.display();
+  
+}
+#endif
+
 void eingabe_benutzer(){
+  
   lcd.setCursor(0,0);
   lcd.print("ppm:            ");
   lcd.setCursor(0,1);
-  lcd.print("wasser:        ");
+  lcd.print("Wasser:        ");
 
   do{ 
     delay(200);
@@ -142,7 +206,10 @@ void eingabe_benutzer(){
     lcd.print("     ");
     lcd.setCursor(8,0);
     lcd.print(eingabe_ppm);
-    
+    #ifdef OLED
+    eingabe = 1;    
+    print_oled();
+    #endif    
     lcd_taste = lese_tasten();
     switch(lcd_taste)
       { case tasteHOCH:
@@ -157,7 +224,7 @@ void eingabe_benutzer(){
         } 
     }while(lcd_taste != tasteSELECT);
     
-  delay(500); // Pause damit Select nict durchläuft
+  delay(500); // Pause damit Select nicht durchläuft
   
   do{
     delay(200);
@@ -165,6 +232,10 @@ void eingabe_benutzer(){
     lcd.print("     ");
     lcd.setCursor(8,1);
     lcd.print(eingabe_wasser);
+    #ifdef OLED
+    eingabe = 2;
+    print_oled();
+    #endif
     
     lcd_taste = lese_tasten();
     switch(lcd_taste)
@@ -191,17 +262,33 @@ void setup()
  //pinMode(AUDIO,OUTPUT);
  pinMode(POLW, OUTPUT);
  digitalWrite(POLW, LOW); // StartwertLow
+ //testLast
+ pinMode(TESTLAST, OUTPUT);
+ digitalWrite(TESTLAST, HIGH); // StartwertLow
   
  // Start LCD mit 2 Zeilen und 16 Zeichen
- lcd.begin(16, 2);              
+ lcd.begin(16, 2);
  lcd.clear();
  lcd.setCursor(0,0);
  lcd.print("** Silverino **");
  lcd.setCursor(0,1); 
  lcd.print("Ver.0.4/1/2017");
+ #ifdef OLED
+ oled.begin(SSD1306_SWITCHCAPVCC, 0x3C);
+ oled.display();
+ oled.setTextSize(1);
+ oled.setTextColor(WHITE);         
+ oled.clearDisplay();
+ oled.setCursor(0,0);
+ oled.println("** Silverino **");
+ oled.println("Ver.0.4/1/2017");
+ oled.display();
+ #endif
  delay(3000);
  lcd.clear();
- 
+ #ifdef OLED 
+ oled.clearDisplay();
+ #endif
  // Start Strommodul INA219
  ina219.begin();
  ina219.setCalibration_16V_400mA();
@@ -224,15 +311,24 @@ void setup()
 //########################## LOOP ############################ 
 void loop(){
   lcd.clear();
+  #ifdef OLED
+  oled.clearDisplay();
+  #endif
   eingabe_benutzer(); // Eingabemenü ppm und wasser
   lcd.clear();
+  #ifdef OLED
+  oled.clearDisplay();
+  #endif
   zielmasse = ppm2masse(eingabe_ppm,eingabe_wasser);
   
   TIMER_ON // Timer 1 starten
   digitalWrite(START, HIGH); // An,Aus Pin 11 auf high
   do{           
       current_mA = ina219.getCurrent_mA(); // Strom messen
-        //Serial.println(current_mA);
+      #ifdef OLED
+      oled.display();
+      #endif
+      //Serial.println(current_mA);
       }while (masse <= zielmasse); // Solange Gesamtmasse kleiner als Zielmasse, mach weiter
   TIMER_OFF
   digitalWrite(START, LOW); // An,Aus Pin 11 auf low
